@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="出貨追蹤">
+<meta name="theme-color" content="#0f0f0f">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<title>出貨追蹤</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f0f0f;
+  --bg2: #1a1a1a;
+  --bg3: #242424;
+  --border: rgba(255,255,255,0.08);
+  --border2: rgba(255,255,255,0.15);
+  --text: #f0ede8;
+  --text2: rgba(240,237,232,0.55);
+  --text3: rgba(240,237,232,0.3);
+  --red: #ff4d4d;
+  --red-bg: rgba(255,77,77,0.12);
+  --amber: #f5a623;
+  --amber-bg: rgba(245,166,35,0.12);
+  --green: #4ade80;
+  --green-bg: rgba(74,222,128,0.1);
+  --blue: #60a5fa;
+  --blue-bg: rgba(96,165,250,0.1);
+  --safe: env(safe-area-inset-top);
+  --safeb: env(safe-area-inset-bottom);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Noto Sans TC',sans-serif;overflow-x:hidden;}
+body{display:flex;flex-direction:column;min-height:100dvh;}
+
+/* header */
+.topbar{padding:calc(var(--safe) + 56px) 20px 0;background:var(--bg);}
+.topbar-inner{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;}
+.app-title{font-size:22px;font-weight:700;letter-spacing:-0.5px;}
+.app-title span{color:var(--amber);}
+.add-btn{width:40px;height:40px;border-radius:50%;background:var(--amber);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#0f0f0f;font-size:22px;line-height:1;transition:transform 0.15s;}
+.add-btn:active{transform:scale(0.9);}
+
+/* stats row */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:20px;}
+.stat{background:var(--bg2);border:0.5px solid var(--border);border-radius:12px;padding:10px 8px;text-align:center;}
+.stat-num{font-size:20px;font-weight:700;font-family:'DM Mono',monospace;}
+.stat-label{font-size:10px;color:var(--text2);margin-top:2px;line-height:1.3;}
+.stat.danger .stat-num{color:var(--red);}
+.stat.warn .stat-num{color:var(--amber);}
+.stat.done .stat-num{color:var(--green);}
+
+/* filter */
+.filters{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none;margin-bottom:16px;}
+.filters::-webkit-scrollbar{display:none;}
+.filter-chip{flex-shrink:0;padding:6px 14px;border-radius:20px;border:0.5px solid var(--border);background:none;color:var(--text2);font-size:12px;font-family:'Noto Sans TC',sans-serif;cursor:pointer;transition:all 0.15s;}
+.filter-chip.active{background:var(--amber);color:#0f0f0f;border-color:var(--amber);font-weight:500;}
+
+/* list */
+.list{flex:1;padding:0 20px;padding-bottom:calc(var(--safeb) + 24px);display:flex;flex-direction:column;gap:10px;}
+.empty{text-align:center;padding:60px 20px;color:var(--text3);}
+.empty-icon{font-size:48px;margin-bottom:12px;}
+.empty-text{font-size:14px;}
+
+/* card */
+.card{background:var(--bg2);border:0.5px solid var(--border);border-radius:16px;padding:14px 16px;position:relative;overflow:hidden;transition:border-color 0.15s;}
+.card:active{border-color:var(--border2);}
+.card-accent{position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:16px 0 0 16px;}
+.card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px;}
+.card-name{font-size:15px;font-weight:500;line-height:1.4;flex:1;}
+.card-badge{font-size:11px;padding:3px 10px;border-radius:20px;white-space:nowrap;font-family:'DM Mono',monospace;font-weight:500;flex-shrink:0;}
+.badge-danger{background:var(--red-bg);color:var(--red);}
+.badge-warn{background:var(--amber-bg);color:var(--amber);}
+.badge-ok{background:var(--green-bg);color:var(--green);}
+.badge-done{background:var(--blue-bg);color:var(--blue);}
+.card-meta{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--text2);margin-bottom:10px;}
+.card-note{font-size:11px;color:var(--text3);margin-bottom:10px;line-height:1.5;}
+.card-actions{display:flex;gap:6px;justify-content:flex-end;}
+.card-btn{padding:5px 12px;border-radius:8px;border:0.5px solid var(--border);background:none;color:var(--text2);font-size:11px;font-family:'Noto Sans TC',sans-serif;cursor:pointer;transition:all 0.15s;}
+.card-btn:active{background:var(--bg3);}
+.card-btn.done-btn{color:var(--green);border-color:rgba(74,222,128,0.3);}
+.card-btn.undo-btn{color:var(--blue);border-color:rgba(96,165,250,0.3);}
+.card-btn.del-btn{color:var(--red);border-color:rgba(255,77,77,0.2);}
+.progress{height:2px;background:var(--border);border-radius:2px;margin-bottom:10px;overflow:hidden;}
+.progress-fill{height:100%;border-radius:2px;}
+
+/* modal */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:100;display:none;align-items:flex-end;}
+.overlay.open{display:flex;}
+.sheet{background:var(--bg2);border-radius:24px 24px 0 0;padding:24px 20px calc(var(--safeb) + 24px);width:100%;max-height:90dvh;overflow-y:auto;animation:slideUp 0.25s cubic-bezier(0.32,0.72,0,1);}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.sheet-handle{width:36px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 20px;}
+.sheet h2{font-size:17px;font-weight:700;margin-bottom:20px;}
+.field{margin-bottom:16px;}
+.field label{font-size:12px;color:var(--text2);display:block;margin-bottom:6px;}
+.field input,.field textarea{width:100%;background:var(--bg3);border:0.5px solid var(--border2);border-radius:10px;padding:12px 14px;color:var(--text);font-size:15px;font-family:'Noto Sans TC',sans-serif;outline:none;-webkit-appearance:none;}
+.field input:focus,.field textarea:focus{border-color:var(--amber);}
+.field textarea{resize:none;line-height:1.5;}
+.sheet-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px;}
+.btn-cancel{padding:14px;border:0.5px solid var(--border2);background:none;color:var(--text2);border-radius:12px;font-size:15px;font-family:'Noto Sans TC',sans-serif;cursor:pointer;}
+.btn-save{padding:14px;background:var(--amber);color:#0f0f0f;border:none;border-radius:12px;font-size:15px;font-weight:700;font-family:'Noto Sans TC',sans-serif;cursor:pointer;}
+
+/* toast */
+.toast{position:fixed;bottom:calc(var(--safeb) + 24px);left:50%;transform:translateX(-50%) translateY(20px);background:var(--bg3);border:0.5px solid var(--border2);color:var(--text);padding:10px 18px;border-radius:20px;font-size:13px;opacity:0;transition:all 0.25s;pointer-events:none;z-index:200;white-space:nowrap;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* overdue flash */
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.6}}
+.card.overdue{animation:pulse 2s infinite;}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="app-title">出貨<span>追蹤</span></div>
+    <button class="add-btn" onclick="openSheet()" aria-label="新增產品">+</button>
+  </div>
+  <div class="stats">
+    <div class="stat"><div class="stat-num" id="s-all">0</div><div class="stat-label">全部</div></div>
+    <div class="stat danger"><div class="stat-num" id="s-danger">0</div><div class="stat-label">緊急</div></div>
+    <div class="stat warn"><div class="stat-num" id="s-warn">0</div><div class="stat-label">注意</div></div>
+    <div class="stat done"><div class="stat-num" id="s-done">0</div><div class="stat-label">完成</div></div>
+  </div>
+  <div class="filters">
+    <button class="filter-chip active" onclick="setFilter('all',this)">全部</button>
+    <button class="filter-chip" onclick="setFilter('danger',this)">🔴 緊急</button>
+    <button class="filter-chip" onclick="setFilter('warn',this)">🟡 注意</button>
+    <button class="filter-chip" onclick="setFilter('ok',this)">🟢 正常</button>
+    <button class="filter-chip" onclick="setFilter('done',this)">✓ 完成</button>
+  </div>
+</div>
+
+<div class="list" id="list"></div>
+
+<div class="overlay" id="overlay" onclick="closeSheet(event)">
+  <div class="sheet" id="sheet">
+    <div class="sheet-handle"></div>
+    <h2 id="sheet-title">新增產品</h2>
+    <div class="field"><label>產品名稱 *</label><input type="text" id="f-name" placeholder="例：A型零件批次"></div>
+    <div class="field"><label>預計出貨日 *</label><input type="date" id="f-date"></div>
+    <div class="field"><label>負責部門</label><input type="text" id="f-dept" placeholder="例：倉儲部、業務部"></div>
+    <div class="field"><label>需要哪些文件 / 備註</label><textarea id="f-note" rows="3" placeholder="例：裝箱單、品檢報告、進口許可…"></textarea></div>
+    <div class="sheet-actions">
+      <button class="btn-cancel" onclick="closeSheet()">取消</button>
+      <button class="btn-save" onclick="saveItem()">儲存</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let items = JSON.parse(localStorage.getItem('ship_v2')||'null');
+let editId = null;
+let filter = 'all';
+
+if(!items){
+  items=[
+    {id:'s1',name:'A型零件批次',date:'2026-06-05',dept:'倉儲部',note:'裝箱單、品檢報告',done:false},
+    {id:'s2',name:'B系列電子模組',date:'2026-06-20',dept:'業務部',note:'等待客戶確認規格',done:false},
+    {id:'s3',name:'C型包裝材料',date:'2026-07-10',dept:'採購部',note:'',done:false},
+  ];
+  save();
+}
+
+function save(){localStorage.setItem('ship_v2',JSON.stringify(items));}
+
+function days(d){
+  const now=new Date();now.setHours(0,0,0,0);
+  return Math.ceil((new Date(d)-now)/(864e5));
+}
+
+function status(it){
+  if(it.done)return'done';
+  const d=days(it.date);
+  if(d<=0)return'overdue';
+  if(d<=7)return'danger';
+  if(d<=14)return'warn';
+  return'ok';
+}
+
+function accentColor(s){
+  if(s==='done')return'#60a5fa';
+  if(s==='overdue'||s==='danger')return'#ff4d4d';
+  if(s==='warn')return'#f5a623';
+  return'#4ade80';
+}
+
+function badgeClass(s){
+  if(s==='done')return'badge-done';
+  if(s==='overdue'||s==='danger')return'badge-danger';
+  if(s==='warn')return'badge-warn';
+  return'badge-ok';
+}
+
+function badgeText(it){
+  if(it.done)return'已完成';
+  const d=days(it.date);
+  if(d<0)return`逾期${Math.abs(d)}天`;
+  if(d===0)return'今天！';
+  return`${d}天後`;
+}
+
+function progressPct(it){
+  if(it.done)return 100;
+  const d=days(it.date);
+  return Math.max(0,Math.min(100,Math.round(((30-d)/30)*100)));
+}
+
+function render(){
+  const total=items.length;
+  let danger=0,warn=0,done=0;
+  items.forEach(it=>{
+    const s=status(it);
+    if(s==='danger'||s==='overdue')danger++;
+    if(s==='warn')warn++;
+    if(s==='done')done++;
+  });
+  document.getElementById('s-all').textContent=total;
+  document.getElementById('s-danger').textContent=danger;
+  document.getElementById('s-warn').textContent=warn;
+  document.getElementById('s-done').textContent=done;
+
+  let list=filter==='all'?[...items]:items.filter(it=>{
+    const s=status(it);
+    if(filter==='danger')return s==='danger'||s==='overdue';
+    return s===filter;
+  });
+
+  list.sort((a,b)=>{
+    if(a.done&&!b.done)return 1;
+    if(!a.done&&b.done)return-1;
+    return days(a.date)-days(b.date);
+  });
+
+  const el=document.getElementById('list');
+  if(!list.length){
+    el.innerHTML=`<div class="empty"><div class="empty-icon">📦</div><div class="empty-text">沒有符合的項目</div></div>`;
+    return;
+  }
+
+  el.innerHTML=list.map(it=>{
+    const s=status(it);
+    const color=accentColor(s);
+    const pct=progressPct(it);
+    const dateStr=new Date(it.date).toLocaleDateString('zh-TW',{month:'numeric',day:'numeric'});
+    const overdue=s==='overdue'?'overdue':'';
+    return`<div class="card ${overdue}">
+      <div class="card-accent" style="background:${color}"></div>
+      <div style="padding-left:8px">
+        <div class="card-top">
+          <div class="card-name">${it.name}</div>
+          <span class="card-badge ${badgeClass(s)}">${badgeText(it)}</span>
+        </div>
+        <div class="card-meta">
+          <span>📅 ${dateStr}</span>
+          ${it.dept?`<span>🏢 ${it.dept}</span>`:''}
+        </div>
+        ${it.note?`<div class="card-note">📋 ${it.note}</div>`:''}
+        <div class="progress"><div class="progress-fill" style="width:${pct}%;background:${color}"></div></div>
+        <div class="card-actions">
+          ${it.done
+            ?`<button class="card-btn undo-btn" onclick="toggle('${it.id}')">↩ 復原</button>`
+            :`<button class="card-btn done-btn" onclick="toggle('${it.id}')">✓ 完成</button>`
+          }
+          <button class="card-btn" onclick="edit('${it.id}')">✏️ 編輯</button>
+          <button class="card-btn del-btn" onclick="del('${it.id}')">🗑</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function openSheet(id=null){
+  editId=id;
+  document.getElementById('sheet-title').textContent=id?'編輯產品':'新增產品';
+  if(id){
+    const it=items.find(x=>x.id===id);
+    document.getElementById('f-name').value=it.name;
+    document.getElementById('f-date').value=it.date;
+    document.getElementById('f-dept').value=it.dept||'';
+    document.getElementById('f-note').value=it.note||'';
+  }else{
+    document.getElementById('f-name').value='';
+    document.getElementById('f-date').value='';
+    document.getElementById('f-dept').value='';
+    document.getElementById('f-note').value='';
+  }
+  document.getElementById('overlay').classList.add('open');
+}
+
+function closeSheet(e){
+  if(!e||e.target===document.getElementById('overlay'))
+    document.getElementById('overlay').classList.remove('open');
+}
+
+function saveItem(){
+  const name=document.getElementById('f-name').value.trim();
+  const date=document.getElementById('f-date').value;
+  if(!name||!date){toast('請填寫產品名稱及出貨日期');return;}
+  const dept=document.getElementById('f-dept').value.trim();
+  const note=document.getElementById('f-note').value.trim();
+  if(editId){
+    const it=items.find(x=>x.id===editId);
+    Object.assign(it,{name,date,dept,note});
+    toast('已更新');
+  }else{
+    items.push({id:'i'+Date.now(),name,date,dept,note,done:false});
+    toast('已新增 📦');
+  }
+  save();closeSheet();render();
+}
+
+function toggle(id){
+  const it=items.find(x=>x.id===id);
+  it.done=!it.done;
+  save();render();
+  toast(it.done?'✓ 已完成！':'↩ 已復原');
+}
+
+function edit(id){openSheet(id);}
+
+function del(id){
+  if(!confirm('確定刪除？'))return;
+  items=items.filter(x=>x.id!==id);
+  save();render();toast('已刪除');
+}
+
+function setFilter(f,btn){
+  filter=f;
+  document.querySelectorAll('.filter-chip').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  render();
+}
+
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  clearTimeout(t._t);
+  t._t=setTimeout(()=>t.classList.remove('show'),2000);
+}
+
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js');
+}
+
+render();
+</script>
+</body>
+</html>
